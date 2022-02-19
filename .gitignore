@@ -1,2 +1,9 @@
 .idea
 .DS_Store
+*.gem
+Gemfile.lock
+.bundle
+vendor
+
+pug/*
+!pug/.gitkeep
