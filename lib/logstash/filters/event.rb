@@ -109,7 +109,7 @@ class LogStash::Filters::Event < LogStash::Filters::Base
     event.set("event", metric.count)
 
     keys = name.split(",", -1)
-    @group.each do |g, index|
+    @group.each_with_index do |g, index|
       next if @group_ignore.length() > 0 && @group_ignore.include?(g)
       event.set(g, keys[index])
     end
