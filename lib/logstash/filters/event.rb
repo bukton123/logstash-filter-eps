@@ -39,6 +39,7 @@ class LogStash::Filters::Event < LogStash::Filters::Base
     require "socket"
     require "atomic"
     require "thread_safe"
+
     @last_flush = Atomic.new(0) # how many seconds ago the metrics where flushed.
     @last_clear = Atomic.new(0) # how many seconds ago the metrics where cleared.
     @random_key_prefix = SecureRandom.hex
@@ -52,10 +53,7 @@ class LogStash::Filters::Event < LogStash::Filters::Base
   public
   def filter(event)
     key_event = create_key event
-    event.set("eq", @metric_groups.keys.include?(key_event))
-    event.set("key_event", key_event)
-    event.set("keys", @metric_groups.keys)
-
+    # puts key_event.inspect
     @metric_groups[key_event].mark
   end
 
@@ -72,10 +70,14 @@ class LogStash::Filters::Event < LogStash::Filters::Base
 
     event = LogStash::Event.new
     event.set("message", @host)
+    results = []
     @metric_groups.each_pair do |name, metric|
-      flush_rates event, name, metric
+      flush_rates name, metric, results
       metric.clear if should_clear?
     end
+
+    event.set("results", results)
+
 
     # Reset counter since metrics were flushed
     @last_flush.value = 0
@@ -99,21 +101,23 @@ class LogStash::Filters::Event < LogStash::Filters::Base
   def create_key(event)
     key_events = []
     @group.each do |g|
-      key_events << event.get(event.sprintf(g))
+      key_events << "#{g}:#{event.get(event.sprintf(g))}"
     end
 
     key_events.join(",")
   end
 
-  def flush_rates(event, name, metric)
-    event.set("event", metric.count)
+  def flush_rates(name, metric, results)
+    hashMap = {
+      event: metric.count
+    }
 
-    keys = name.split(",", -1)
-    @group.each_with_index do |g, index|
-      next if @group_ignore.length() > 0 && @group_ignore.include?(g)
-      event.set(g, keys[index])
+    name.split(",", -1).each do |kv|
+      output = kv.split(":", -1)
+      hashMap[output[0]] = output[1] || ""
     end
 
+    results << hashMap
   end
 
   def should_flush?

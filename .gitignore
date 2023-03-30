@@ -7,3 +7,4 @@ vendor
 
 pug/*
 !pug/.gitkeep
+.mvn
