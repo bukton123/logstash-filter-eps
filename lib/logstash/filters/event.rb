@@ -76,7 +76,7 @@ class LogStash::Filters::Event < LogStash::Filters::Base
       metric.clear if should_clear?
     end
 
-    event.set("results", results)
+    event.set("events", results)
 
 
     # Reset counter since metrics were flushed
