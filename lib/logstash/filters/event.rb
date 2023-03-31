@@ -10,15 +10,17 @@ require "logstash/namespace"
 #
 # filter {
 #   event {
-#     group => [ "message" ]
+#     group => {
+#        "key" => "name of event"
+#     }
 #   }
 # }
 #
 class LogStash::Filters::Event < LogStash::Filters::Base
   config_name "event"
 
-  # syntax: `group => [ "name of event", "name of event" ]`
-  config :group, :validate => :array, :default => []
+  # syntax: `group => { "key" => "name of event" }`
+  config :group, :validate => :array, :hash => {}
 
   # syntax: `ignore => [ "name of event" ]`
   # The ignore, when ignore output field
@@ -43,7 +45,6 @@ class LogStash::Filters::Event < LogStash::Filters::Base
     @last_flush = Atomic.new(0) # how many seconds ago the metrics where flushed.
     @last_clear = Atomic.new(0) # how many seconds ago the metrics where cleared.
     @random_key_prefix = SecureRandom.hex
-    # Same as logstash-input-file
     @host = Socket.gethostname.force_encoding(Encoding::UTF_8)
     @metric_groups = ThreadSafe::Cache.new { |h,k| h[k] = Metriks.meter k }
   end
@@ -100,8 +101,8 @@ class LogStash::Filters::Event < LogStash::Filters::Base
 
   def create_key(event)
     key_events = []
-    @group.each do |g|
-      key_events << "#{g}:#{event.get(event.sprintf(g))}"
+    @group.each do |k,v|
+      key_events << "#{k}:#{event.get(event.sprintf(v))}"
     end
 
     key_events.join(",")
