@@ -22,10 +22,6 @@ class LogStash::Filters::Event < LogStash::Filters::Base
   # syntax: `group => { "key" => "name of event" }`
   config :group, :validate => :array, :hash => {}
 
-  # syntax: `ignore => [ "name of event" ]`
-  # The ignore, when ignore output field
-  config :group_ignore, :validate => :array, :default => []
-
   # The flush interval, when the metrics event is created. Must be a multiple of 1s.
   config :flush_interval, :validate => :number, :default => 5
 
@@ -71,13 +67,13 @@ class LogStash::Filters::Event < LogStash::Filters::Base
 
     event = LogStash::Event.new
     event.set("message", @host)
-    results = []
+    results = {}
     @metric_groups.each_pair do |name, metric|
-      flush_rates name, metric, results
+      flush_rates  name, metric, results
       metric.clear if should_clear?
     end
 
-    event.set("events", results)
+    event.set("results", results)
 
 
     # Reset counter since metrics were flushed
@@ -118,7 +114,7 @@ class LogStash::Filters::Event < LogStash::Filters::Base
       hashMap[output[0]] = output[1] || ""
     end
 
-    results << hashMap
+    results[name] = hashMap
   end
 
   def should_flush?
